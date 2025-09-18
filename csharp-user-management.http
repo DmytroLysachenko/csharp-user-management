@@ -1,0 +1,43 @@
+@baseUrl = http://localhost:5041
+@apiUsers = {{baseUrl}}/api/users
+@contentType = application/json
+
+### Get all users
+GET {{apiUsers}}
+Accept: application/json
+
+### Get user by id
+
+// Update userId accordingly to user created during testing
+@userId = 499283ac-61c2-4611-94ff-f647c6cac392
+GET {{apiUsers}}/{{userId}}
+Accept: application/json
+
+### Create user
+# @name createUser
+POST {{apiUsers}}
+Content-Type: {{contentType}}
+
+{
+  "email": "ada.lovelace@example.com",
+  "fullName": "Ada Lovelace"
+}
+
+### Update user
+# @name updateUser
+PUT {{apiUsers}}/{{userId}}
+Content-Type: {{contentType}}
+
+{
+  "email": "ada.updated@example.com",
+  "fullName": "Ada Love"
+}
+
+### Delete user
+# @name deleteUser
+DELETE {{apiUsers}}/{{userId}}
+Accept: application/json
+
+### Redirect to Swagger UI
+GET {{baseUrl}}/
+Accept: text/html
