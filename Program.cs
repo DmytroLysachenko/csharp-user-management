@@ -23,6 +23,22 @@ app.UseHttpsRedirection();
 app.UseSwagger();
 app.UseSwaggerUI();
 
+app.Use(
+    async (context, next) =>
+    {
+        var method = context.Request.Method;
+        var path = context.Request.Path;
+        await next();
+        var statusCode = context.Response.StatusCode;
+        app.Logger.LogInformation(
+            "Handled {Method} {Path} with status code {StatusCode}",
+            method,
+            path,
+            statusCode
+        );
+    }
+);
+
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
 var users = app.MapGroup("/api/users").WithTags("Users").WithOpenApi();
