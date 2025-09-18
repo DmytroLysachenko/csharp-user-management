@@ -1,6 +1,8 @@
+using System.Text.Json;
 using csharp_user_management.Contracts;
 using csharp_user_management.Domain;
 using csharp_user_management.Infrastructure;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,7 +18,24 @@ builder.Services.AddSingleton<IUserRepository, InMemoryUserRepository>();
 
 var app = builder.Build();
 
-app.UseExceptionHandler();
+app.UseExceptionHandler(appBuilder =>
+{
+    appBuilder.Run(async context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/json";
+
+        var feature = context.Features.Get<IExceptionHandlerFeature>();
+        if (feature?.Error is { } exception)
+        {
+            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogError(exception, "Unhandled exception while processing request");
+        }
+
+        var payload = JsonSerializer.Serialize(new { error = "Internal server error." });
+        await context.Response.WriteAsync(payload);
+    });
+});
 app.UseStatusCodePages();
 app.UseHttpsRedirection();
 
