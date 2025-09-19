@@ -16,7 +16,26 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddSingleton<IUserRepository, InMemoryUserRepository>();
 
+var configuredTokens =
+    builder.Configuration.GetSection("Authentication:Tokens").Get<string[]>()
+    ?? Array.Empty<string>();
+var singleToken = builder.Configuration["Authentication:Token"];
+var tokenCandidates = string.IsNullOrWhiteSpace(singleToken)
+    ? configuredTokens
+    : configuredTokens.Append(singleToken).ToArray();
+var validTokens = tokenCandidates
+    .Select(token => token?.Trim())
+    .Where(token => !string.IsNullOrWhiteSpace(token))
+    .ToHashSet(StringComparer.Ordinal);
+
 var app = builder.Build();
+
+if (validTokens.Count == 0)
+{
+    app.Logger.LogWarning(
+        "No authentication tokens are configured; all requests will be rejected."
+    );
+}
 
 app.UseExceptionHandler(appBuilder =>
 {
@@ -36,11 +55,41 @@ app.UseExceptionHandler(appBuilder =>
         await context.Response.WriteAsync(payload);
     });
 });
+
 app.UseStatusCodePages();
 app.UseHttpsRedirection();
 
 app.UseSwagger();
 app.UseSwaggerUI();
+
+app.Use(
+    async (context, next) =>
+    {
+        if (!context.Request.Headers.TryGetValue("Authorization", out var authHeader))
+        {
+            await WriteUnauthorizedAsync(context);
+            return;
+        }
+
+        var token = authHeader.ToString();
+        if (token.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            token = token.Substring("Bearer ".Length).Trim();
+        }
+        else
+        {
+            token = token.Trim();
+        }
+
+        if (!validTokens.Contains(token))
+        {
+            await WriteUnauthorizedAsync(context);
+            return;
+        }
+
+        await next();
+    }
+);
 
 app.Use(
     async (context, next) =>
@@ -206,6 +255,14 @@ users
     .ProducesProblem(StatusCodes.Status404NotFound);
 
 app.Run();
+
+static Task WriteUnauthorizedAsync(HttpContext context)
+{
+    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+    context.Response.ContentType = "application/json";
+    var payload = JsonSerializer.Serialize(new { error = "Unauthorized" });
+    return context.Response.WriteAsync(payload);
+}
 
 static ProblemDetails CreateNotFoundProblem(Guid id) =>
     new()

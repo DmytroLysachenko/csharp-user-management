@@ -1,22 +1,26 @@
 @baseUrl = http://localhost:5041
 @apiUsers = {{baseUrl}}/api/users
 @contentType = application/json
+@authToken = dev-secret-token
 
 ### Get all users
 GET {{apiUsers}}
 Accept: application/json
+Authorization: Bearer {{authToken}}
 
 ### Get user by id
 
 // Update userId accordingly to user created during testing
-@userId = 499283ac-61c2-4611-94ff-f647c6cac392
+@userId = 5984aef3-d557-46f7-bffe-348f094f1636
 GET {{apiUsers}}/{{userId}}
 Accept: application/json
+Authorization: Bearer {{authToken}}
 
 ### Create user
 # @name createUser
 POST {{apiUsers}}
 Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
 
 {
   "email": "ada.lovelace@example.com",
@@ -27,6 +31,7 @@ Content-Type: {{contentType}}
 # @name updateUser
 PUT {{apiUsers}}/{{userId}}
 Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
 
 {
   "email": "ada.updated@example.com",
@@ -37,7 +42,9 @@ Content-Type: {{contentType}}
 # @name deleteUser
 DELETE {{apiUsers}}/{{userId}}
 Accept: application/json
+Authorization: Bearer {{authToken}}
 
 ### Redirect to Swagger UI
 GET {{baseUrl}}/
 Accept: text/html
+Authorization: Bearer {{authToken}}
